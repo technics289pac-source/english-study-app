@@ -1,5 +1,4 @@
-const STORAGE_KEY = "english_practice_notes_v3";
-const CLOUD_CONFIG_KEY = "english_practice_cloud_config_v1";
+const STORAGE_KEY = "english_practice_notes_v4";
 
 const addForm = document.getElementById("add-form");
 const englishInput = document.getElementById("english");
@@ -7,30 +6,22 @@ const japaneseInput = document.getElementById("japanese");
 const toggleJapanese = document.getElementById("toggle-japanese");
 const translateBtn = document.getElementById("translate-btn");
 const ttsBtn = document.getElementById("tts-btn");
-const saveCloudConfigBtn = document.getElementById("save-cloud-config-btn");
-const loadCloudBtn = document.getElementById("load-cloud-btn");
 const statusEl = document.getElementById("status");
 const list = document.getElementById("list");
 const template = document.getElementById("card-template");
-
-const supabaseUrlInput = document.getElementById("supabase-url");
-const supabaseAnonKeyInput = document.getElementById("supabase-anon-key");
-const cloudUserIdInput = document.getElementById("cloud-user-id");
 
 const defaultItems = [
   {
     id: crypto.randomUUID(),
     english: "Nice to meet you. I study English every day.",
-    japanese: "はじめまして。毎日英語を勉強しています。",
+    japanese: "\u306f\u3058\u3081\u307e\u3057\u3066\u3002\u6bce\u65e5\u82f1\u8a9e\u3092\u52c9\u5f37\u3057\u3066\u3044\u307e\u3059\u3002",
     audioUrl: "",
   },
 ];
 
 let items = loadItems();
-let supabaseClient = null;
 let generatedAudioUrl = "";
 
-initCloudConfig();
 render();
 registerServiceWorker();
 
@@ -63,58 +54,6 @@ function saveItems() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-function loadCloudConfig() {
-  const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
-  if (!raw) return { url: "", anonKey: "", userId: "" };
-  try {
-    const parsed = JSON.parse(raw);
-    return {
-      url: String(parsed.url || ""),
-      anonKey: String(parsed.anonKey || ""),
-      userId: String(parsed.userId || ""),
-    };
-  } catch {
-    return { url: "", anonKey: "", userId: "" };
-  }
-}
-
-function saveCloudConfig(config) {
-  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(config));
-}
-
-function initCloudConfig() {
-  const config = loadCloudConfig();
-  supabaseUrlInput.value = config.url;
-  supabaseAnonKeyInput.value = config.anonKey;
-  cloudUserIdInput.value = config.userId;
-
-  if (config.url && config.anonKey && window.supabase?.createClient) {
-    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-  }
-}
-
-function getCloudConfigFromInput() {
-  return {
-    url: supabaseUrlInput.value.trim(),
-    anonKey: supabaseAnonKeyInput.value.trim(),
-    userId: cloudUserIdInput.value.trim() || "default-user",
-  };
-}
-
-function ensureSupabaseClient() {
-  const config = getCloudConfigFromInput();
-  if (!config.url || !config.anonKey) {
-    throw new Error("Set Supabase URL and anon key first.");
-  }
-  if (!window.supabase?.createClient) {
-    throw new Error("Supabase library is not loaded.");
-  }
-  if (!supabaseClient) {
-    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-  }
-  return { client: supabaseClient, config };
-}
-
 function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -131,7 +70,7 @@ async function requestNaturalEnglish(japaneseText) {
     body: JSON.stringify({ japanese: japaneseText }),
   });
   if (!res.ok) {
-    let message = "Translation failed.";
+    let message = "\u7ffb\u8a33\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002";
     try {
       const data = await res.json();
       if (data?.error) message = data.error;
@@ -151,7 +90,7 @@ async function requestTtsAudio(englishText) {
     body: JSON.stringify({ english: englishText }),
   });
   if (!res.ok) {
-    let message = "Voice generation failed.";
+    let message = "\u97f3\u58f0\u751f\u6210\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002";
     try {
       const data = await res.json();
       if (data?.error) message = data.error;
@@ -162,49 +101,6 @@ async function requestTtsAudio(englishText) {
   }
   const blob = await res.blob();
   return blobToDataUrl(blob);
-}
-
-async function upsertCloudItem(item) {
-  const { client, config } = ensureSupabaseClient();
-  const payload = {
-    id: item.id,
-    user_id: config.userId,
-    english: item.english,
-    japanese: item.japanese,
-    audio_url: item.audioUrl || "",
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await client.from("study_sentences").upsert(payload);
-  if (error) throw new Error(`Cloud save failed: ${error.message}`);
-}
-
-async function deleteCloudItem(id) {
-  const { client, config } = ensureSupabaseClient();
-  const { error } = await client
-    .from("study_sentences")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", config.userId);
-  if (error) throw new Error(`Cloud delete failed: ${error.message}`);
-}
-
-async function loadFromCloud() {
-  const { client, config } = ensureSupabaseClient();
-  const { data, error } = await client
-    .from("study_sentences")
-    .select("id, english, japanese, audio_url")
-    .eq("user_id", config.userId)
-    .order("updated_at", { ascending: false });
-  if (error) throw new Error(`Cloud load failed: ${error.message}`);
-
-  items = (data || []).map((row) => ({
-    id: row.id,
-    english: row.english,
-    japanese: row.japanese,
-    audioUrl: row.audio_url || "",
-  }));
-  saveItems();
-  render();
 }
 
 function render() {
@@ -226,12 +122,14 @@ function render() {
     playButton.disabled = !item.audioUrl;
     playButton.addEventListener("click", () => {
       if (!item.audioUrl) return;
-      new Audio(item.audioUrl).play().catch(() => alert("Cannot play audio."));
+      new Audio(item.audioUrl).play().catch(() =>
+        alert("\u97f3\u58f0\u3092\u518d\u751f\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002")
+      );
     });
 
     speakButton.addEventListener("click", () => {
       if (!("speechSynthesis" in window)) {
-        alert("Speech synthesis is not supported in this browser.");
+        alert("\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u306f\u97f3\u58f0\u8aad\u307f\u4e0a\u3052\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002");
         return;
       }
       const utterance = new SpeechSynthesisUtterance(item.english);
@@ -240,55 +138,29 @@ function render() {
       speechSynthesis.speak(utterance);
     });
 
-    deleteButton.addEventListener("click", async () => {
-      const deleted = item;
+    deleteButton.addEventListener("click", () => {
       items = items.filter((x) => x.id !== item.id);
       saveItems();
       render();
-      try {
-        await deleteCloudItem(deleted.id);
-      } catch {
-        // optional cloud sync
-      }
     });
 
     list.appendChild(node);
   }
 }
 
-saveCloudConfigBtn.addEventListener("click", () => {
-  const config = getCloudConfigFromInput();
-  saveCloudConfig(config);
-  supabaseClient = null;
-  try {
-    ensureSupabaseClient();
-    setStatus("Cloud settings saved.");
-  } catch (error) {
-    setStatus(error.message, true);
-  }
-});
-
-loadCloudBtn.addEventListener("click", async () => {
-  loadCloudBtn.disabled = true;
-  setStatus("Loading from cloud...");
-  try {
-    await loadFromCloud();
-    setStatus("Loaded from cloud.");
-  } catch (error) {
-    setStatus(error.message, true);
-  } finally {
-    loadCloudBtn.disabled = false;
-  }
-});
-
 translateBtn.addEventListener("click", async () => {
   const japanese = japaneseInput.value.trim();
-  if (!japanese) return setStatus("Enter Japanese text first.", true);
+  if (!japanese) {
+    return setStatus(
+      "\u5148\u306b\u65e5\u672c\u8a9e\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+      true
+    );
+  }
   translateBtn.disabled = true;
-  setStatus("Translating...");
+  setStatus("\u7ffb\u8a33\u4e2d...");
   try {
     englishInput.value = await requestNaturalEnglish(japanese);
-    setStatus("Translated.");
+    setStatus("\u7ffb\u8a33\u3057\u307e\u3057\u305f\u3002");
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -298,16 +170,24 @@ translateBtn.addEventListener("click", async () => {
 
 ttsBtn.addEventListener("click", async () => {
   const english = englishInput.value.trim();
-  if (!english) return setStatus("Enter English text first.", true);
+  if (!english) {
+    return setStatus(
+      "\u5148\u306b\u82f1\u8a9e\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+      true
+    );
+  }
   ttsBtn.disabled = true;
-  setStatus("Generating voice...");
+  setStatus("\u97f3\u58f0\u3092\u751f\u6210\u4e2d...");
   try {
     generatedAudioUrl = await requestTtsAudio(english);
     try {
       await new Audio(generatedAudioUrl).play();
-      setStatus("Voice generated and playing.");
+      setStatus("\u97f3\u58f0\u3092\u751f\u6210\u3057\u3066\u518d\u751f\u3057\u307e\u3057\u305f\u3002");
     } catch {
-      setStatus("Voice generated. Tap Play if autoplay was blocked.", true);
+      setStatus(
+        "\u97f3\u58f0\u3092\u751f\u6210\u3057\u307e\u3057\u305f\u3002\u518d\u751f\u306f Play \u30dc\u30bf\u30f3\u3092\u62bc\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+        true
+      );
     }
   } catch (error) {
     setStatus(error.message, true);
@@ -316,13 +196,13 @@ ttsBtn.addEventListener("click", async () => {
   }
 });
 
-addForm.addEventListener("submit", async (event) => {
+addForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const english = englishInput.value.trim();
   const japanese = japaneseInput.value.trim();
 
-  if (!japanese) return setStatus("Japanese is required.", true);
-  if (!english) return setStatus("English is required.", true);
+  if (!japanese) return setStatus("\u65e5\u672c\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
+  if (!english) return setStatus("\u82f1\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
 
   const newItem = {
     id: crypto.randomUUID(),
@@ -336,14 +216,7 @@ addForm.addEventListener("submit", async (event) => {
   addForm.reset();
   generatedAudioUrl = "";
   render();
-  setStatus("Added.");
-
-  try {
-    await upsertCloudItem(newItem);
-    setStatus("Added and synced to cloud.");
-  } catch {
-    // optional cloud sync
-  }
+  setStatus("\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002");
 });
 
 toggleJapanese.addEventListener("change", render);

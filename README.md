@@ -1,6 +1,6 @@
 # English Practice Notebook
 
-Japanese to English translation, TTS audio generation, and optional Supabase sync.
+Japanese to English translation and TTS audio generation.
 
 ## Setup
 
@@ -19,6 +19,7 @@ Open `http://127.0.0.1:3000`.
 - Chrome/Edge (Android/PC): open the app URL and use `Install app` from browser menu.
 - iPhone (Safari): open the app URL, tap Share, then `Add to Home Screen`.
 - If old files remain cached, reload once after restarting server.
+- On Render free plan, first translation/tts request may take 30-60 seconds while the server wakes up.
 
 ## Deploy To Render (Use Outside Home Wi-Fi)
 
@@ -42,28 +43,4 @@ OPENAI_TRANSLATE_MODEL=gpt-4o-mini
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 OPENAI_TTS_VOICE=alloy
 PORT=3000
-```
-
-## Supabase (Optional)
-
-Create table:
-
-```sql
-create table if not exists public.study_sentences (
-  id text primary key,
-  user_id text not null,
-  english text not null,
-  japanese text not null,
-  audio_url text not null default '',
-  updated_at timestamptz not null default now()
-);
-
-alter table public.study_sentences enable row level security;
-
-create policy "allow anon read/write for demo"
-on public.study_sentences
-for all
-to anon
-using (true)
-with check (true);
 ```

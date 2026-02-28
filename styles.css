@@ -34,6 +34,11 @@ body {
   margin: 6px 0 0;
   color: var(--sub);
 }
+.warmup-note {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: #7a4a00;
+}
 
 .container {
   display: grid;

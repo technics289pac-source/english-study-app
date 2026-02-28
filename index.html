@@ -6,71 +6,60 @@
     <meta name="theme-color" content="#0f5de5" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Study Notebook" />
+    <meta name="apple-mobile-web-app-title" content="&#x82F1;&#x8A9E;&#x30CE;&#x30FC;&#x30C8;" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
-    <title>English Practice Notebook</title>
+    <title>&#x82F1;&#x8A9E;&#x7DF4;&#x7FD2;&#x30CE;&#x30FC;&#x30C8;</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="app-header">
-      <h1>English Practice Notebook</h1>
-      <p>JP to EN translation + natural voice + cloud sync</p>
+      <h1>&#x82F1;&#x8A9E;&#x7DF4;&#x7FD2;&#x30CE;&#x30FC;&#x30C8;</h1>
+      <p>
+        &#x65E5;&#x672C;&#x8A9E;&#x3092;&#x81EA;&#x7136;&#x306A;&#x82F1;&#x8A9E;&#x306B;&#x7FFB;&#x8A33;&#x3057;&#x3066;&#x3001;&#x97F3;&#x58F0;&#x3067;&#x7DF4;&#x7FD2;&#x3067;&#x304D;&#x307E;&#x3059;&#x3002;
+      </p>
+      <p class="warmup-note">
+        Render&#x7121;&#x6599;&#x30D7;&#x30E9;&#x30F3;&#x3067;&#x306F;&#x3001;&#x6700;&#x521D;&#x306E;&#x7FFB;&#x8A33;/&#x97F3;&#x58F0;&#x751F;&#x6210;&#x3067;30&#x301C;60&#x79D2;&#x307B;&#x3069;&#x5F85;&#x3064;&#x3053;&#x3068;&#x304C;&#x3042;&#x308A;&#x307E;&#x3059;&#x3002;
+      </p>
     </header>
 
     <main class="container">
-      <section class="panel" hidden>
-        <h2>Supabase Sync</h2>
-        <form id="cloud-form">
-          <label>
-            Supabase URL
-            <input id="supabase-url" type="url" placeholder="https://xxxx.supabase.co" />
-          </label>
-          <label>
-            Supabase anon key
-            <input id="supabase-anon-key" type="text" placeholder="eyJ..." />
-          </label>
-          <label>
-            User ID (same ID on phone/PC)
-            <input id="cloud-user-id" type="text" placeholder="technics5808" />
-          </label>
-          <div class="button-row">
-            <button type="button" id="save-cloud-config-btn">Save Settings</button>
-            <button type="button" id="load-cloud-btn">Load From Cloud</button>
-          </div>
-        </form>
-      </section>
-
       <section class="panel">
-        <h2>Add Sentence</h2>
+        <h2>&#x30D5;&#x30EC;&#x30FC;&#x30BA;&#x8FFD;&#x52A0;</h2>
         <form id="add-form">
           <label>
-            Japanese (required)
-            <textarea id="japanese" required placeholder="はじめまして。毎日英語を勉強しています。"></textarea>
+            &#x65E5;&#x672C;&#x8A9E;&#xFF08;&#x5FC5;&#x9808;&#xFF09;
+            <textarea
+              id="japanese"
+              required
+              placeholder="&#x306F;&#x3058;&#x3081;&#x307E;&#x3057;&#x3066;&#x3002;&#x6BCE;&#x65E5;&#x82F1;&#x8A9E;&#x3092;&#x52C9;&#x5F37;&#x3057;&#x3066;&#x3044;&#x307E;&#x3059;&#x3002;"
+            ></textarea>
           </label>
 
           <label>
-            English
+            &#x82F1;&#x8A9E;
             <textarea id="english" placeholder="Nice to meet you. I study English every day."></textarea>
           </label>
 
           <div class="button-row">
-            <button type="button" id="translate-btn">Translate to Natural English</button>
-            <button type="button" id="tts-btn">Generate Voice</button>
+            <button type="button" id="translate-btn">
+              &#x81EA;&#x7136;&#x306A;&#x82F1;&#x8A9E;&#x306B;&#x7FFB;&#x8A33;
+            </button>
+            <button type="button" id="tts-btn">&#x97F3;&#x58F0;&#x3092;&#x751F;&#x6210;</button>
           </div>
 
           <p id="status" class="status"></p>
-          <button type="submit">Add to Study List</button>
+          <button type="submit">&#x5B66;&#x7FD2;&#x30EA;&#x30B9;&#x30C8;&#x306B;&#x8FFD;&#x52A0;</button>
         </form>
       </section>
 
       <section class="panel">
         <div class="toolbar">
-          <h2>Study List</h2>
+          <h2>&#x5B66;&#x7FD2;&#x30EA;&#x30B9;&#x30C8;</h2>
           <label class="inline">
             <input id="toggle-japanese" type="checkbox" checked />
-            Show Japanese
+            &#x65E5;&#x672C;&#x8A9E;&#x3092;&#x8868;&#x793A;
           </label>
         </div>
         <div id="list" class="list"></div>
@@ -84,12 +73,11 @@
         <div class="actions">
           <button class="play" type="button">Play</button>
           <button class="speak" type="button">Speak</button>
-          <button class="delete danger" type="button">Delete</button>
+          <button class="delete danger" type="button">&#x524A;&#x9664;</button>
         </div>
       </article>
     </template>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app.js"></script>
   </body>
 </html>
