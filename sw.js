@@ -1,4 +1,4 @@
-const CACHE_NAME = "english-study-notebook-v1";
+const CACHE_NAME = "english-study-notebook-v2";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -31,20 +31,36 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  const isHtmlRequest =
+    event.request.mode === "navigate" ||
+    (event.request.headers.get("accept") || "").includes("text/html");
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request)
+  if (isHtmlRequest && url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
           const cloned = response.clone();
-          if (response.ok && event.request.url.startsWith(self.location.origin)) {
+          if (response.ok) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
           }
           return response;
         })
-        .catch(() => caches.match("/index.html"));
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/index.html")))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        const cloned = response.clone();
+        if (response.ok && url.origin === self.location.origin) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
+        }
+        return response;
+      });
     })
   );
 });
