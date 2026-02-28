@@ -1,0 +1,13 @@
+{
+  "name": "english-study-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Japanese-to-English learning app with automatic translation and TTS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

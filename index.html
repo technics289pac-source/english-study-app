@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f5de5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Study Notebook" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+    <title>English Practice Notebook</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>English Practice Notebook</h1>
+      <p>JP to EN translation + natural voice + cloud sync</p>
+    </header>
+
+    <main class="container">
+      <section class="panel">
+        <h2>Supabase Sync</h2>
+        <form id="cloud-form">
+          <label>
+            Supabase URL
+            <input id="supabase-url" type="url" placeholder="https://xxxx.supabase.co" />
+          </label>
+          <label>
+            Supabase anon key
+            <input id="supabase-anon-key" type="text" placeholder="eyJ..." />
+          </label>
+          <label>
+            User ID (same ID on phone/PC)
+            <input id="cloud-user-id" type="text" placeholder="technics5808" />
+          </label>
+          <div class="button-row">
+            <button type="button" id="save-cloud-config-btn">Save Settings</button>
+            <button type="button" id="load-cloud-btn">Load From Cloud</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Add Sentence</h2>
+        <form id="add-form">
+          <label>
+            Japanese (required)
+            <textarea id="japanese" required placeholder="はじめまして。毎日英語を勉強しています。"></textarea>
+          </label>
+
+          <label>
+            English
+            <textarea id="english" placeholder="Nice to meet you. I study English every day."></textarea>
+          </label>
+
+          <div class="button-row">
+            <button type="button" id="translate-btn">Translate to Natural English</button>
+            <button type="button" id="tts-btn">Generate Voice</button>
+          </div>
+
+          <p id="status" class="status"></p>
+          <button type="submit">Add to Study List</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="toolbar">
+          <h2>Study List</h2>
+          <label class="inline">
+            <input id="toggle-japanese" type="checkbox" checked />
+            Show Japanese
+          </label>
+        </div>
+        <div id="list" class="list"></div>
+      </section>
+    </main>
+
+    <template id="card-template">
+      <article class="card">
+        <p class="english"></p>
+        <p class="japanese"></p>
+        <div class="actions">
+          <button class="play" type="button">Play</button>
+          <button class="speak" type="button">Speak</button>
+          <button class="delete danger" type="button">Delete</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

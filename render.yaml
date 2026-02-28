@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: english-study-app
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: OPENAI_TRANSLATE_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_TTS_MODEL
+        value: gpt-4o-mini-tts
+      - key: OPENAI_TTS_VOICE
+        value: alloy
+      - key: OPENAI_API_KEY
+        sync: false
