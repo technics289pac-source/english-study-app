@@ -9,9 +9,28 @@ const HOST = process.env.HOST || "0.0.0.0";
 const TRANSLATE_MODEL = process.env.OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 const TTS_MODEL = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const TTS_VOICE = process.env.OPENAI_TTS_VOICE || "alloy";
+const NO_STORE_FILES = new Set([
+  "/",
+  "/index.html",
+  "/app.js",
+  "/styles.css",
+  "/sw.js",
+  "/manifest.webmanifest",
+]);
 
 app.use(express.json({ limit: "3mb" }));
-app.use(express.static(__dirname));
+app.use(
+  express.static(__dirname, {
+    setHeaders(res, filePath) {
+      const relativePath = `/${path.relative(__dirname, filePath).replace(/\\/g, "/")}`;
+      if (NO_STORE_FILES.has(relativePath)) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+    },
+  })
+);
 
 loadEnvFile(path.join(__dirname, ".env"));
 
@@ -153,10 +172,14 @@ app.post("/api/tts", async (req, res) => {
 });
 
 app.get("/", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/healthz", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.status(200).json({ ok: true });
 });
 
