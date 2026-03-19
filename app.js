@@ -9,10 +9,23 @@ const ttsBtn = document.getElementById("tts-btn");
 const statusEl = document.getElementById("status");
 const list = document.getElementById("list");
 const template = document.getElementById("card-template");
+const APP_VERSION = "2026-03-19-1";
+
+function createId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 const defaultItems = [
   {
-    id: crypto.randomUUID(),
+    id: createId(),
     english: "Nice to meet you. I study English every day.",
     japanese: "\u306f\u3058\u3081\u307e\u3057\u3066\u3002\u6bce\u65e5\u82f1\u8a9e\u3092\u52c9\u5f37\u3057\u3066\u3044\u307e\u3059\u3002",
     audioUrl: "",
@@ -24,19 +37,40 @@ let generatedAudioUrl = "";
 
 render();
 registerServiceWorker();
+installDiagnostics();
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {
-      // Offline support is optional.
-    });
+    navigator.serviceWorker
+      .register(`./sw.js?v=${APP_VERSION}`)
+      .then((registration) => registration.update().catch(() => {}))
+      .catch(() => {
+        // Offline support is optional.
+      });
   });
 }
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
   statusEl.classList.toggle("error", isError);
+}
+
+function installDiagnostics() {
+  window.addEventListener("error", (event) => {
+    const message =
+      event?.error?.message || event?.message || "JavaScript error occurred.";
+    setStatus(`画面エラー: ${message}`, true);
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event?.reason;
+    const message =
+      typeof reason === "string"
+        ? reason
+        : reason?.message || "Unexpected async error occurred.";
+    setStatus(`通信エラー: ${message}`, true);
+  });
 }
 
 function loadItems() {
@@ -159,7 +193,11 @@ translateBtn.addEventListener("click", async () => {
   translateBtn.disabled = true;
   setStatus("\u7ffb\u8a33\u4e2d...");
   try {
-    englishInput.value = await requestNaturalEnglish(japanese);
+    const translated = await requestNaturalEnglish(japanese);
+    if (!translated) {
+      throw new Error("翻訳結果が空でした。再読み込みしてもう一度試してください。");
+    }
+    englishInput.value = translated;
     setStatus("\u7ffb\u8a33\u3057\u307e\u3057\u305f\u3002");
   } catch (error) {
     setStatus(error.message, true);
@@ -205,7 +243,7 @@ addForm.addEventListener("submit", (event) => {
   if (!english) return setStatus("\u82f1\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
 
   const newItem = {
-    id: crypto.randomUUID(),
+    id: createId(),
     english,
     japanese,
     audioUrl: generatedAudioUrl,
