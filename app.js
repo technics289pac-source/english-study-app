@@ -35,6 +35,7 @@ const defaultItems = [
 
 let items = loadItems();
 let generatedAudioUrl = "";
+let quotaExceeded = false;
 
 render();
 registerServiceWorker();
@@ -55,6 +56,21 @@ function registerServiceWorker() {
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
   statusEl.classList.toggle("error", isError);
+}
+
+function isQuotaErrorMessage(message) {
+  const text = String(message || "").toLowerCase();
+  return text.includes("quota exceeded") || text.includes("insufficient_quota");
+}
+
+function handleQuotaExceeded(featureName) {
+  quotaExceeded = true;
+  translateBtn.disabled = true;
+  ttsBtn.disabled = true;
+  setStatus(
+    `${featureName}は一時停止しました。OpenAIの利用上限に達したため、今は英語の手動入力とSpeakだけ使えます。`,
+    true
+  );
 }
 
 function installDiagnostics() {
@@ -112,7 +128,9 @@ async function requestNaturalEnglish(japaneseText) {
     } catch {
       // ignore parse errors
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.isQuotaError = isQuotaErrorMessage(message);
+    throw error;
   }
   const data = await res.json();
   return data.english || "";
@@ -132,7 +150,9 @@ async function requestTtsAudio(englishText) {
     } catch {
       // ignore parse errors
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.isQuotaError = isQuotaErrorMessage(message);
+    throw error;
   }
   const blob = await res.blob();
   return blobToDataUrl(blob);
@@ -188,6 +208,9 @@ function render() {
 }
 
 translateBtn.addEventListener("click", async () => {
+  if (quotaExceeded) {
+    return handleQuotaExceeded("翻訳");
+  }
   const japanese = japaneseInput.value.trim();
   if (!japanese) {
     return setStatus(
@@ -207,13 +230,33 @@ translateBtn.addEventListener("click", async () => {
     englishInput.value = translated;
     setStatus("\u7ffb\u8a33\u3057\u307e\u3057\u305f\u3002");
   } catch (error) {
+    if (error?.isQuotaError) {
+      return handleQuotaExceeded("翻訳");
+    }
     setStatus(error.message, true);
   } finally {
-    translateBtn.disabled = false;
+    if (!quotaExceeded) translateBtn.disabled = false;
   }
 });
 
 ttsBtn.addEventListener("click", async () => {
+  if (quotaExceeded) {
+    if ("speechSynthesis" in window) {
+      const english = englishInput.value.trim();
+      if (!english) {
+        return setStatus(
+          "\u5148\u306b\u82f1\u8a9e\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+          true
+        );
+      }
+      const utterance = new SpeechSynthesisUtterance(english);
+      utterance.lang = "en-US";
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+      return setStatus("OpenAI音声は停止中です。ブラウザ音声で再生しました。");
+    }
+    return handleQuotaExceeded("音声生成");
+  }
   const english = englishInput.value.trim();
   if (!english) {
     return setStatus(
@@ -237,9 +280,23 @@ ttsBtn.addEventListener("click", async () => {
       );
     }
   } catch (error) {
+    if (error?.isQuotaError) {
+      handleQuotaExceeded("音声生成");
+      if ("speechSynthesis" in window && english) {
+        const utterance = new SpeechSynthesisUtterance(english);
+        utterance.lang = "en-US";
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+        return setStatus(
+          "OpenAI音声は停止しました。ブラウザ音声で再生しました。",
+          true
+        );
+      }
+      return;
+    }
     setStatus(error.message, true);
   } finally {
-    ttsBtn.disabled = false;
+    if (!quotaExceeded) ttsBtn.disabled = false;
   }
 });
 
