@@ -9,7 +9,7 @@ const ttsBtn = document.getElementById("tts-btn");
 const statusEl = document.getElementById("status");
 const list = document.getElementById("list");
 const template = document.getElementById("card-template");
-const APP_VERSION = "2026-03-19-1";
+const APP_VERSION = "2026-04-07-1";
 
 function createId() {
   if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -27,7 +27,8 @@ const defaultItems = [
   {
     id: createId(),
     english: "Nice to meet you. I study English every day.",
-    japanese: "\u306f\u3058\u3081\u307e\u3057\u3066\u3002\u6bce\u65e5\u82f1\u8a9e\u3092\u52c9\u5f37\u3057\u3066\u3044\u307e\u3059\u3002",
+    japanese:
+      "\u306f\u3058\u3081\u307e\u3057\u3066\u3002\u6bce\u65e5\u82f1\u8a9e\u3092\u52c9\u5f37\u3057\u3066\u3044\u307e\u3059\u3002",
     audioUrl: "",
   },
 ];
@@ -60,7 +61,7 @@ function installDiagnostics() {
   window.addEventListener("error", (event) => {
     const message =
       event?.error?.message || event?.message || "JavaScript error occurred.";
-    setStatus(`画面エラー: ${message}`, true);
+    setStatus(`\u753b\u9762\u30a8\u30e9\u30fc: ${message}`, true);
   });
 
   window.addEventListener("unhandledrejection", (event) => {
@@ -69,7 +70,7 @@ function installDiagnostics() {
       typeof reason === "string"
         ? reason
         : reason?.message || "Unexpected async error occurred.";
-    setStatus(`通信エラー: ${message}`, true);
+    setStatus(`\u901a\u4fe1\u30a8\u30e9\u30fc: ${message}`, true);
   });
 }
 
@@ -151,19 +152,23 @@ function render() {
 
     english.textContent = item.english;
     japanese.textContent = item.japanese;
-    if (!showJapanese) japanese.classList.add("hidden");
+    if (!showJapanese || !item.japanese) japanese.classList.add("hidden");
 
     playButton.disabled = !item.audioUrl;
     playButton.addEventListener("click", () => {
       if (!item.audioUrl) return;
       new Audio(item.audioUrl).play().catch(() =>
-        alert("\u97f3\u58f0\u3092\u518d\u751f\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002")
+        alert(
+          "\u97f3\u58f0\u3092\u518d\u751f\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002"
+        )
       );
     });
 
     speakButton.addEventListener("click", () => {
       if (!("speechSynthesis" in window)) {
-        alert("\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u306f\u97f3\u58f0\u8aad\u307f\u4e0a\u3052\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002");
+        alert(
+          "\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u306f\u97f3\u58f0\u8aad\u307f\u4e0a\u3052\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002"
+        );
         return;
       }
       const utterance = new SpeechSynthesisUtterance(item.english);
@@ -195,7 +200,9 @@ translateBtn.addEventListener("click", async () => {
   try {
     const translated = await requestNaturalEnglish(japanese);
     if (!translated) {
-      throw new Error("翻訳結果が空でした。再読み込みしてもう一度試してください。");
+      throw new Error(
+        "\u7ffb\u8a33\u7d50\u679c\u304c\u7a7a\u3067\u3057\u305f\u3002\u518d\u8aad\u307f\u8fbc\u307f\u3057\u3066\u3082\u3046\u4e00\u5ea6\u8a66\u3057\u3066\u304f\u3060\u3055\u3044\u3002"
+      );
     }
     englishInput.value = translated;
     setStatus("\u7ffb\u8a33\u3057\u307e\u3057\u305f\u3002");
@@ -220,7 +227,9 @@ ttsBtn.addEventListener("click", async () => {
     generatedAudioUrl = await requestTtsAudio(english);
     try {
       await new Audio(generatedAudioUrl).play();
-      setStatus("\u97f3\u58f0\u3092\u751f\u6210\u3057\u3066\u518d\u751f\u3057\u307e\u3057\u305f\u3002");
+      setStatus(
+        "\u97f3\u58f0\u3092\u751f\u6210\u3057\u3066\u518d\u751f\u3057\u307e\u3057\u305f\u3002"
+      );
     } catch {
       setStatus(
         "\u97f3\u58f0\u3092\u751f\u6210\u3057\u307e\u3057\u305f\u3002\u518d\u751f\u306f Play \u30dc\u30bf\u30f3\u3092\u62bc\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
@@ -239,8 +248,9 @@ addForm.addEventListener("submit", (event) => {
   const english = englishInput.value.trim();
   const japanese = japaneseInput.value.trim();
 
-  if (!japanese) return setStatus("\u65e5\u672c\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
-  if (!english) return setStatus("\u82f1\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
+  if (!english) {
+    return setStatus("\u82f1\u8a9e\u306f\u5fc5\u9808\u3067\u3059\u3002", true);
+  }
 
   const newItem = {
     id: createId(),

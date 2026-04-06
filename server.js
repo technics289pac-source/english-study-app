@@ -84,6 +84,38 @@ function extractResponseText(data) {
   return "";
 }
 
+async function readOpenAiError(response) {
+  const fallback = response.statusText || "OpenAI API request failed.";
+
+  try {
+    const data = await response.json();
+    const message = String(data?.error?.message || fallback).trim();
+    const code = String(data?.error?.code || "").trim();
+    const type = String(data?.error?.type || "").trim();
+
+    if (code === "insufficient_quota") {
+      return {
+        status: 429,
+        message:
+          "OpenAI API quota exceeded. Please add billing/credits or raise your usage limit, then try again.",
+      };
+    }
+
+    return {
+      status: response.status,
+      message: message || fallback,
+      code,
+      type,
+    };
+  } catch {
+    const text = await response.text().catch(() => "");
+    return {
+      status: response.status,
+      message: text || fallback,
+    };
+  }
+}
+
 app.post("/api/translate", async (req, res) => {
   if (!assertApiKey(res)) return;
   const apiKey = getApiKey();
@@ -117,8 +149,10 @@ app.post("/api/translate", async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(500).json({ error: `translate failed: ${errorText}` });
+      const error = await readOpenAiError(response);
+      return res
+        .status(error.status >= 400 ? error.status : 500)
+        .json({ error: `translate failed: ${error.message}` });
     }
 
     const data = await response.json();
@@ -159,8 +193,10 @@ app.post("/api/tts", async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(500).json({ error: `tts failed: ${errorText}` });
+      const error = await readOpenAiError(response);
+      return res
+        .status(error.status >= 400 ? error.status : 500)
+        .json({ error: `tts failed: ${error.message}` });
     }
 
     const audioBuffer = Buffer.from(await response.arrayBuffer());
